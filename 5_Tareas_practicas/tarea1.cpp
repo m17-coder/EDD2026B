@@ -1,5 +1,5 @@
 /*programar una funcion que evalue que no exista
-un bucle dentro de una lista dobleenlazada de nodos
+un bucle dentro de una lista doble enlazada de nodos
 */
 #include <iostream>
 using namespace std;
@@ -27,20 +27,35 @@ Nodo<P>* conectarnodos(Nodo<P>* header, Nodo<P>* nuevo_nodo){
     return header;
 }
 
-bool verificarbucle(Nodo<int>* header){
+bool verificarbucle(Nodo<int>* header, Nodo<int>* tail){
     Nodo<int>* lento = header;
     Nodo<int>* rapido = header;
     
+    Nodo <int>* ultimolento = tail;
+    Nodo <int>* ultimorapido = tail;
     while(rapido != nullptr && rapido->otronodo != nullptr){
         lento = lento->otronodo;
         rapido = rapido->otronodo->otronodo;
-        
+    
         if(lento == rapido){
+            cout << "El bucle se encuentra en la lista desde adelante hacia atras" << endl;
             return true;
         }
-    }
-    return false;
+        }
+            while(ultimorapido != nullptr && ultimorapido->anterior != nullptr){
+                ultimolento = ultimolento->anterior;
+                ultimorapido = ultimorapido->anterior->anterior;
+                
+                if (ultimolento == ultimorapido){
+                    cout << "El bucle se encuentra en la lista desde atras hacia adelante" << endl;
+                    return true;
+                }
+            }
+            return false;
+        
 }
+
+
 
 int main(){
     Nodo <int>* n1 = new Nodo<int>();
@@ -67,15 +82,22 @@ int main(){
     n4->otronodo = nullptr;
     cout << "ingrese dato4:" << endl;
     cin >> n4->dato;
-    header = conectarnodos<int>(header, n2); // Conectamos n4 a n2 para crear un bucle
+    header = conectarnodos<int>(header, n4);
+    n1->anterior = nullptr;
+    n2->anterior = n1;
+    n3->anterior = n2;
+    // Esto crea un bucle hacia atras entre n2, n3 y n4
+    n4->anterior = n3;
+    n2->anterior = n4; 
+    Nodo<int>* tail = n4;
     cout << "Head vale:" << header << endl;
     cout << "Siguiente de n2:" << n2->otronodo << " (deberia ser n3)" << endl;
     cout << "Siguiente de n3:" << n3->otronodo << " (deberia ser 0/null)" << endl;
     
-    if(verificarbucle(header)){
-        cout << "Se encontró un bucle en la lista." << endl;
+    if(verificarbucle(header, tail)){
+        cout << "Se encontro un bucle en la lista." << endl;
     } else {
-        cout << "No se encontró un bucle en la lista." << endl;
+        cout << "No se encontro un bucle en la lista." << endl;
     }
     
     return 0;
