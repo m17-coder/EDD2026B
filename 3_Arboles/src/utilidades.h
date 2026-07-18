@@ -1,11 +1,15 @@
 #pragma once
 
+#include "estructura_de_arbol.h"
 #include <iostream>
 #include <limits>
 #include <conio.h>
 #include <cstdlib>
 #include <cctype>
 #include <string>
+#include <fstream>
+#include <sstream>
+
 
 using namespace std;
 
@@ -91,6 +95,43 @@ bool pedirEnteroCancelable(const char* etiqueta, int& valor) {
     else {
         valor = stoi(entrada);
     }
+
+    return true;
+}
+
+bool leerCSV(const string& ruta_archivo, ArbolMiembros& arbol) {
+    ifstream archivo(ruta_archivo);
+    if (!archivo.is_open()) return false;
+    
+    string linea;
+    getline(archivo, linea); // saltar encabezado
+
+    while (getline(archivo, linea)) {
+        if (linea.empty()) continue;
+        stringstream ss(linea);
+        string dato;
+        Miembro nuevo;
+
+
+        getline(ss, dato, ','); nuevo.id = stoi(dato);
+        getline(ss, nuevo.name, ',');
+        getline(ss, nuevo.last_name, ',');
+        
+        getline(ss, dato, ','); nuevo.gender = dato[0];
+        
+        getline(ss, dato, ','); nuevo.age = stoi(dato);
+        getline(ss, dato, ','); nuevo.id_boss = stoi(dato);
+        
+        getline(ss, dato, ','); nuevo.is_dead = (stoi(dato) == 1);
+        getline(ss, dato, ','); nuevo.in_jail = (stoi(dato) == 1);
+        getline(ss, dato, ','); nuevo.was_boss = (stoi(dato) == 1);
+        getline(ss, dato, ','); nuevo.is_boss = (stoi(dato) == 1);
+
+        
+        // Llamada al método de tu clase ArbolMiembros
+        arbol.insertarMiembro(nuevo);
+    }
+    archivo.close();
 
     return true;
 }
