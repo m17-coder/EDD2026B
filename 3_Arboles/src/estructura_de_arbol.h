@@ -84,6 +84,22 @@ private:
         mostrarInterno(actual->izq, prefijo + (esIzquierdo ? "    " : "│   "), true);
     }
 
+     void mostrarInternoVivos(NodoMiembro* actual, string prefijo, bool esIzquierdo) const {
+        if (actual == nullptr) return;
+
+        // Primero recorremos la rama de los hermanos (derecha) para mantener el formato visual invertido
+        mostrarInternoVivos(actual->der, prefijo + (esIzquierdo ? "│   " : "    "), false);
+
+        // EVALUACIÓN PEDAGÓGICA: Solo imprimimos el nodo si el miembro NO está muerto
+        if (!actual->dato.is_dead) {
+            cout << prefijo;
+            cout << (esIzquierdo ? "└── " : "┌── ");
+            imprimirMiembro(actual->dato);
+        }
+
+        // Finalmente recorremos la rama de los subordinados/hijos (izquierda)
+        mostrarInternoVivos(actual->izq, prefijo + (esIzquierdo ? "    " : "│   "), true);
+    }
 public:
     ArbolMiembros() : root(nullptr) {}
 
@@ -144,6 +160,14 @@ public:
             return;
         }
         mostrarInterno(root, "", true);
+    }
+
+    void mostrarSoloVIvos() const {
+        if (root == nullptr) {
+            cout << "[Arbol vacio]" << '\n';
+            return;
+        }
+        mostrarInternoVivos(root, "", true);
     }
 };
 
