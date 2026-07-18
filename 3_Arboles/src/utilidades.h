@@ -133,5 +133,6 @@ bool leerCSV(const string& ruta_archivo, ArbolMiembros& arbol) {
     }
     archivo.close();
 
+    arbol.verificarYAutoAsignarJefeInicial();
     return true;
 }
