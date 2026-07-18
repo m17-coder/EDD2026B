@@ -135,6 +135,15 @@ private:
         return obtenerPrimeroLibreYVivo(actual->der);
     }
 
+    int contarSucesoresIdoneos(NodoMiembro* actual) const {
+        if (actual == nullptr) return 0;
+        int cuenta = 0;
+        if (!actual->dato.is_dead && !actual->dato.in_jail && actual->dato.age <= 70) {
+            cuenta = 1;
+        }
+        return cuenta + contarSucesoresIdoneos(actual->izq) + contarSucesoresIdoneos(actual->der);
+    }
+
 public:
     ArbolMiembros() : root(nullptr) {}
 
@@ -214,34 +223,56 @@ public:
 
         cout << "\n--- EJECUTANDO ALGORITMO DE SUCESIÓN EN CADENA ---\n";
         NodoMiembro* nuevoJefe = nullptr;
-        NodoMiembro* padre = encontrarPadre(root, jefe->dato.id); // Buscamos su jefe superior
-        if (padre == nullptr && jefe != root) padre = root; // Mitigación por diseño
+        NodoMiembro* padre = encontrarPadre(root, jefe->dato.id); 
+        if (padre == nullptr && jefe != root) padre = root; 
 
-        // REGLA 1: Primer sucesor vivo fuera de prisión en SU propio subárbol (hijos)
+        // REGLA 1: Primer sucesor vivo fuera de prisión en SU propia rama (subárbol izquierdo)
         if (jefe->izq != nullptr) {
             nuevoJefe = obtenerPrimeroLibreYVivo(jefe->izq);
         }
-        /*
-         Regla 2 y 3: Si no hay sucesores en el jefe , 
-         buscamos en los sucesores del hermano del jefe,
-         y si tampoco tiene sucesores, el hermano del jefe se vuelve jefe   
-        */
+
+        // REGLAS 2 Y 3: Buscar en la rama del hermano
         if (nuevoJefe == nullptr && jefe->der != nullptr) {
-            nuevoJefe = obtenerPrimeroLibreYVivo(jefe->der);
-        }
-        // REGLA 4 Y 5: Buscar en el árbol del jefe de su jefe (padre jerárquico)
-        if (nuevoJefe == nullptr && padre != nullptr) {
-            cout << "[Regla 4/5] Crisis total en la rama. Apelando al nivel superior (Jefe de Jefes)...\n";
-            // Buscamos un compañero libre en el nivel del padre
-            nuevoJefe = obtenerPrimeroLibreYVivo(padre->izq);
-        }
+            if (jefe->der->izq != nullptr) {
+                nuevoJefe = obtenerPrimeroLibreYVivo(jefe->der->izq);
+            }
+            
+            if (nuevoJefe == nullptr) {
+                NodoMiembro* hermano = jefe->der;
+                if (!hermano->dato.is_dead && !hermano->dato.in_jail && hermano->dato.age <= 70) {
+                    cout << "[Regla 3] Los sobrinos no aplican. El hermano se vuelve el jefe.\n";
+                    nuevoJefe = hermano;
+                }
+            }
+        }   
 
-        // REGLA FINAL: Si todos los libres fallan, buscar los que están en prisión pero vivos
+        // REGLAS 4 Y 5: Escalada vertical
         if (nuevoJefe == nullptr) {
-            // Nota: Aquí se implementaría el recorrido inverso/cercano buscando is_dead == false aunque in_jail == true
+            NodoMiembro* ancestro = padre; 
+            bool esPrimerNivelSuperior = true;
+        
+            while (ancestro != nullptr && nuevoJefe == nullptr) {
+                if (esPrimerNivelSuperior) {
+                    cout << "[Regla 4] Buscando en el arbol del compañero del anterior jefe...\n";
+                    nuevoJefe = obtenerPrimeroLibreYVivo(ancestro->izq);
+                    esPrimerNivelSuperior = false; 
+                } 
+                else if (contarSucesoresIdoneos(ancestro->izq) >= 2) {
+                    cout << "[Regla 5] Jefe superior lejano encontrado con contingencia (>=2 aptos): " 
+                         << ancestro->dato.name << "\n";
+                    nuevoJefe = obtenerPrimeroLibreYVivo(ancestro->izq);
+                }
+                
+                ancestro = encontrarPadre(root, ancestro->dato.id);
+            }
+        } 
+
+        // REGLA FINAL: Contingencia de prisión (si todos los libres fallan)
+        if (nuevoJefe == nullptr) {
+            // Próximamente la búsqueda de vivos encarcelados
         }
 
-        // APLICACIÓN AUTOMÁTICA DEL PUESTO
+        // APLICACIÓN AUTOMÁTICA DEL PUESTO 
         if (nuevoJefe != nullptr) {
             jefe->dato.is_boss = false;
             jefe->dato.was_boss = true;
@@ -260,7 +291,7 @@ public:
         } else {
             cout << "\n[!] Alerta Critica: La familia ha sido desmantelada. No quedan sucesores vivos.\n";
         }
-    }
+    } 
 
     void verificarYAutoAsignarJefeInicial() {
         if (root == nullptr) return;
