@@ -65,7 +65,7 @@ private:
         cout << " | sexo: " << miembro.gender;
         cout << " | edad: " << miembro.age;
         cout << " | jefe: " << miembro.id_boss;
-        if (miembro.is_boss) cout << " | CAPO";
+        if (miembro.is_boss) cout << " | JEFAZO SUPREMO";
         if (miembro.was_boss) cout << " | ex jefe";
         if (miembro.in_jail) cout << " | prision";
         if (miembro.is_dead) cout << " | muerto";
@@ -100,6 +100,41 @@ private:
         // Finalmente recorremos la rama de los subordinados/hijos (izquierda)
         mostrarInternoVivos(actual->izq, prefijo + (esIzquierdo ? "    " : "│   "), true);
     }
+
+    NodoMiembro* encontrarPadre(NodoMiembro* actual, int idBuscar) const {
+        if (actual == nullptr) return nullptr;
+        
+        // Si el hijo izquierdo directo o alguno de sus hermanos es el que buscamos
+        NodoMiembro* hijo = actual->izq;
+        while (hijo != nullptr) {
+            if (hijo->dato.id == idBuscar) return actual;
+            hijo = hijo->der;
+        }
+        
+        // Buscar recursivamente en profundidad
+        NodoMiembro* padreIzq = encontrarPadre(actual->izq, idBuscar);
+        if (padreIzq != nullptr) return padreIzq;
+        
+        return encontrarPadre(actual->der, idBuscar);
+    }
+
+    // Busca el primer sucesor elegible (Vivo y fuera de prisión) recorriendo solo un subárbol
+    NodoMiembro* obtenerPrimeroLibreYVivo(NodoMiembro* actual) const {
+        if (actual == nullptr) return nullptr;
+        
+        // Evaluar el nodo actual
+        if (!actual->dato.is_dead && !actual->dato.in_jail && actual->dato.age <= 70) {
+            return actual;
+        }
+        
+        // Buscar primero en sus subordinados (hijos)
+        NodoMiembro* encontrado = obtenerPrimeroLibreYVivo(actual->izq);
+        if (encontrado != nullptr) return encontrado;
+        
+        // Si no, buscar en sus hermanos
+        return obtenerPrimeroLibreYVivo(actual->der);
+    }
+
 public:
     ArbolMiembros() : root(nullptr) {}
 
@@ -169,6 +204,86 @@ public:
         }
         mostrarInternoVivos(root, "", true);
     }
+
+    void simularSucesion(int idJefe) {
+        NodoMiembro* jefe = buscarPorId(root, idJefe);
+        if (jefe == nullptr) {
+            cout << "[!] Error: No se encontro ningun miembro con ID " << idJefe << ".\n";
+            return;
+        }
+
+        cout << "\n--- EJECUTANDO ALGORITMO DE SUCESIÓN EN CADENA ---\n";
+        NodoMiembro* nuevoJefe = nullptr;
+        NodoMiembro* padre = encontrarPadre(root, jefe->dato.id); // Buscamos su jefe superior
+        if (padre == nullptr && jefe != root) padre = root; // Mitigación por diseño
+
+        // REGLA 1: Primer sucesor vivo fuera de prisión en SU propio subárbol (hijos)
+        if (jefe->izq != nullptr) {
+            nuevoJefe = obtenerPrimeroLibreYVivo(jefe->izq);
+        }
+        /*
+         Regla 2 y 3: Si no hay sucesores en el jefe , 
+         buscamos en los sucesores del hermano del jefe,
+         y si tampoco tiene sucesores, el hermano del jefe se vuelve jefe   
+        */
+        if (nuevoJefe == nullptr && jefe->der != nullptr) {
+            nuevoJefe = obtenerPrimeroLibreYVivo(jefe->der);
+        }
+        // REGLA 4 Y 5: Buscar en el árbol del jefe de su jefe (padre jerárquico)
+        if (nuevoJefe == nullptr && padre != nullptr) {
+            cout << "[Regla 4/5] Crisis total en la rama. Apelando al nivel superior (Jefe de Jefes)...\n";
+            // Buscamos un compañero libre en el nivel del padre
+            nuevoJefe = obtenerPrimeroLibreYVivo(padre->izq);
+        }
+
+        // REGLA FINAL: Si todos los libres fallan, buscar los que están en prisión pero vivos
+        if (nuevoJefe == nullptr) {
+            // Nota: Aquí se implementaría el recorrido inverso/cercano buscando is_dead == false aunque in_jail == true
+        }
+
+        // APLICACIÓN AUTOMÁTICA DEL PUESTO
+        if (nuevoJefe != nullptr) {
+            jefe->dato.is_boss = false;
+            jefe->dato.was_boss = true;
+            
+            nuevoJefe->dato.is_boss = true;
+            if (padre != nullptr) {
+                nuevoJefe->dato.id_boss = padre->dato.id;
+            }
+            
+            cout << "\n========================================================\n";
+            cout << " ¡NUEVO JEFE ASIGNADO AUTOMATICAMENTE! \n";
+            cout << "========================================================\n";
+            cout << "Nombre: " << nuevoJefe->dato.name << " " << nuevoJefe->dato.last_name << "\n";
+            cout << "Motivo: Primer sucesor idoneo segun las leyes de la familia.\n";
+            cout << "========================================================\n";
+        } else {
+            cout << "\n[!] Alerta Critica: La familia ha sido desmantelada. No quedan sucesores vivos.\n";
+        }
+    }
+
+    void verificarYAutoAsignarJefeInicial() {
+        if (root == nullptr) return;
+
+        // Buscamos al miembro que el CSV marcó como jefe principal (is_boss == true)
+        // O simplemente evaluamos la raíz del árbol.
+        NodoMiembro* jefeActual = root; 
+        
+        // EVALUACIÓN AUTOMÁTICA DE CONDICIONES INICIALES:
+        // Si el jefe asignado por el CSV ya está muerto, en la cárcel o es mayor de 70 años...
+        if (jefeActual->dato.is_dead || jefeActual->dato.in_jail || jefeActual->dato.age > 70) {
+            cout << "[SISTEMA AUTOMÁTICO] Alerta: El jefe inicial (" << jefeActual->dato.name 
+                 << ") no cumple con los requisitos para gobernar (Muerto, en prision o > 70 años).\n";
+            cout << "[SISTEMA AUTOMÁTICO] Aplicando reglas de sucesion de forma inmediata...\n";
+            
+            // Llamamos a la lógica de sucesión que busca al primer heredero idóneo
+            simularSucesion(jefeActual->dato.id);
+        } else {
+            cout << "[SISTEMA AUTOMÁTICO] Jefe principal verificado con exito: " 
+                 << jefeActual->dato.name << " " << jefeActual->dato.last_name << " esta al mando.\n";
+        }
+    }
+
 };
 
 #endif
