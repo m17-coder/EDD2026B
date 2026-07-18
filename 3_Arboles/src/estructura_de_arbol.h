@@ -1,111 +1,149 @@
-#ifndef ARBOL_LCRS_H
-#define ARBOL_LCRS_H
+#ifndef ARBOL_MIEMBROS_H
+#define ARBOL_MIEMBROS_H
 
 #include <iostream>
 #include <string>
 
 using namespace std;
 
-template <typename T>
-struct Nodo_arbol {
-    T dato;
-    Nodo_arbol<T>* izq; // Primer hijo directo (Sucesor)
-    Nodo_arbol<T>* der; // Siguiente hermano (Compañero sucesor)
+struct Miembro {
+    int id;
+    string name;
+    string last_name;
+    char gender;
+    int age;
+    int id_boss;
+    bool is_dead;
+    bool in_jail;
+    bool was_boss;
+    bool is_boss;
+};
 
-    Nodo_arbol(T d) {
-        dato = d;
+struct NodoMiembro {
+    Miembro dato;
+    NodoMiembro* izq;
+    NodoMiembro* der;
+
+    NodoMiembro(const Miembro& m){
+        dato = m;
         izq = nullptr;
         der = nullptr;
     }
 };
 
-template <typename T>
-class Arbol {
+class ArbolMiembros {
 private:
-    Nodo_arbol<T>* root;
+    NodoMiembro* root;
 
-    // Liberación recursiva de memoria
-    void liberar(Nodo_arbol<T>* actual) {
+    void liberar(NodoMiembro* actual) {
         if (actual == nullptr) return;
         liberar(actual->izq);
         liberar(actual->der);
         delete actual;
     }
 
-    // Impresión en horizontal
-    void imprimirInterno(Nodo_arbol<T>* actual, string prefijo, bool esIzquierdo) {
-        if (actual == nullptr) return;
-
-        // Procesar subárbol derecho (hermanos/ramas superiores en pantalla)
-        imprimirInterno(actual->der, prefijo + (esIzquierdo ? "│   " : "    "), false);
-
-        // Imprimir nodo actual. Asumimos que T tiene un método o sobrecarga para mostrarse.
-        cout << prefijo;
-        cout << (esIzquierdo ? "└── " : "┌── ");
-        imprimirDato(actual->dato);
-
-        // Procesar subárbol izquierdo (hijos/ramas inferiores en pantalla)
-        imprimirInterno(actual->izq, prefijo + (esIzquierdo ? "    " : "│   "), true);
-    }
-
-    // Función auxiliar para imprimir los datos del nodo
-    void imprimirDato(const T& dato) {
-        // Imprime el nombre y apellido.
-        cout << dato.name << " " << dato.last_name;
-        if (dato.is_boss) cout << " [CAPO]";
-        if (dato.in_jail) cout << " (PRISIÓN)";
-        if (dato.is_dead) cout << " (X)";
-        cout << "\n";
-    }
-
-public:
-    Arbol() : root(nullptr) {}
-    ~Arbol() { liberar(root); }
-
-    Nodo_arbol<T>* getRoot() { return root; }
-    void setRoot(Nodo_arbol<T>* nuevoRoot) { root = nuevoRoot; }
-
-    // Función para buscar un nodo por ID
-    Nodo_arbol<T>* buscarPorId(Nodo_arbol<T>* actual, int id) {
+    NodoMiembro* buscarPorId(NodoMiembro* actual, int id) const {
         if (actual == nullptr) return nullptr;
         if (actual->dato.id == id) return actual;
 
-        Nodo_arbol<T>* encontrado = buscarPorId(actual->izq, id);
+        NodoMiembro* encontrado = buscarPorId(actual->izq, id);
         if (encontrado != nullptr) return encontrado;
 
         return buscarPorId(actual->der, id);
     }
 
-    // Inserción basada estrictamente en la jerarquía id_boss
-    void insertarEstructural(T miembro) {
-        Nodo_arbol<T>* nuevo = new Nodo_arbol<T>(miembro);
+    NodoMiembro* ultimoHermano(NodoMiembro* actual) const {
+        if (actual == nullptr) return nullptr;
+        while (actual->der != nullptr) {
+            actual = actual->der;
+        }
+        return actual;
+    }
+
+    void imprimirMiembro(const Miembro& miembro) const {
+        cout << miembro.id << " - " << miembro.name << " " << miembro.last_name;
+        cout << " | sexo: " << miembro.gender;
+        cout << " | edad: " << miembro.age;
+        cout << " | jefe: " << miembro.id_boss;
+        if (miembro.is_boss) cout << " | CAPO";
+        if (miembro.was_boss) cout << " | ex jefe";
+        if (miembro.in_jail) cout << " | prision";
+        if (miembro.is_dead) cout << " | muerto";
+        cout << '\n';
+    }
+
+    void mostrarInterno(NodoMiembro* actual, string prefijo, bool esIzquierdo) const {
+        if (actual == nullptr) return;
+
+        mostrarInterno(actual->der, prefijo + (esIzquierdo ? "│   " : "    "), false);
+
+        cout << prefijo;
+        cout << (esIzquierdo ? "└── " : "┌── ");
+        imprimirMiembro(actual->dato);
+
+        mostrarInterno(actual->izq, prefijo + (esIzquierdo ? "    " : "│   "), true);
+    }
+
+public:
+    ArbolMiembros() : root(nullptr) {}
+
+    ~ArbolMiembros() {
+        liberar(root);
+    }
+
+    NodoMiembro* getRoot() const {
+        return root;
+    }
+
+    void insertarMiembro(const Miembro& miembro) {
+        NodoMiembro* nuevo = new NodoMiembro(miembro);
+
         if (root == nullptr) {
             root = nuevo;
             return;
         }
 
-        Nodo_arbol<T>* jefe = buscarPorId(root, miembro.id_boss);
+        if (buscarPorId(root, miembro.id) != nullptr) {
+            delete nuevo;
+            cout << "[Aviso] ID duplicado ignorado: " << miembro.id << '\n';
+            return;
+        }
+
+        if (miembro.id_boss == 0) {
+            NodoMiembro* ultimo = ultimoHermano(root);
+            ultimo->der = nuevo;
+            return;
+        }
+
+        NodoMiembro* jefe = buscarPorId(root, miembro.id_boss);
         if (jefe == nullptr) {
-            // Si no encuentra al jefe (raíces huérfanas), lo añade como hermano de la raíz
-            Nodo_arbol<T>* temp = root;
-            while (temp->der != nullptr) temp = temp->der;
-            temp->der = nuevo;
+            NodoMiembro* ultimo = ultimoHermano(root);
+            ultimo->der = nuevo;
             return;
         }
 
         if (jefe->izq == nullptr) {
-            jefe->izq = nuevo; // Primer subordinado
-        } else {
-            Nodo_arbol<T>* hermano = jefe->izq;
-            while (hermano->der != nullptr) {
-                hermano = hermano->der;
-            }
-            hermano->der = nuevo; // Siguiente hermano en la cadena
+            jefe->izq = nuevo;
+            return;
         }
+
+        NodoMiembro* ultimoHijo = ultimoHermano(jefe->izq);
+        ultimoHijo->der = nuevo;
     }
 
-    void Mostrar_arbol() {
-        imprimirInterno(root, "", true);
+    bool buscarMiembro(int id, Miembro& encontrado) const {
+        NodoMiembro* nodo = buscarPorId(root, id);
+        if (nodo == nullptr) return false;
+        encontrado = nodo->dato;
+        return true;
+    }
+
+    void Mostrar_arbol() const {
+        if (root == nullptr) {
+            cout << "[Arbol vacio]" << '\n';
+            return;
+        }
+        mostrarInterno(root, "", true);
     }
 };
 
