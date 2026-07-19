@@ -144,6 +144,21 @@ private:
         return cuenta + contarSucesoresIdoneos(actual->izq) + contarSucesoresIdoneos(actual->der);
     }
 
+    
+    NodoMiembro* buscarEnRamaEncarcelada(NodoMiembro* actual) const {
+        if (actual == nullptr) return nullptr;
+
+        if (actual->dato.in_jail && !actual->dato.is_dead) {
+            NodoMiembro* candidato = obtenerPrimeroLibreYVivo(actual->izq);
+            if (candidato != nullptr) return candidato;
+        }
+
+        NodoMiembro* candidatoIzq = buscarEnRamaEncarcelada(actual->izq);
+        if (candidatoIzq != nullptr) return candidatoIzq;
+
+        return buscarEnRamaEncarcelada(actual->der);
+    }
+
 public:
     ArbolMiembros() : root(nullptr) {}
 
@@ -267,9 +282,22 @@ public:
             }
         } 
 
-        // REGLA FINAL: Contingencia de prisión (si todos los libres fallan)
         if (nuevoJefe == nullptr) {
-            // Próximamente la búsqueda de vivos encarcelados
+            cout << "[Regla 6] Contingencia extrema: Buscando sucesores libres desde miembros encarcelados...\n";
+            
+            NodoMiembro* ancestroActual = jefe;
+            
+            while (ancestroActual != nullptr && nuevoJefe == nullptr) {
+                nuevoJefe = buscarEnRamaEncarcelada(ancestroActual);
+                
+                if (nuevoJefe == nullptr) {
+                    ancestroActual = encontrarPadre(root, ancestroActual->dato.id);
+                }
+            }
+
+            if (nuevoJefe == nullptr) {
+                nuevoJefe = buscarEnRamaEncarcelada(root);
+                }
         }
 
         // APLICACIÓN AUTOMÁTICA DEL PUESTO 
