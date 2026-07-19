@@ -159,6 +159,45 @@ private:
         return buscarEnRamaEncarcelada(actual->der);
     }
 
+    NodoMiembro* buscarNodoPorId(NodoMiembro* nodo, int id_buscado) {
+        // Caso base 1: Llegamos a una hoja vacía y no lo encontramos
+        if (nodo == nullptr) {
+            return nullptr;
+        }
+
+        // Caso base 2: ¡Lo encontramos en el nodo actual!
+        if (nodo->dato.id == id_buscado) {
+            return nodo;
+        }
+        
+        // Buscamos en toda la rama izquierda
+        NodoMiembro* encontradoIzq = buscarNodoPorId(nodo->izq, id_buscado);
+        if (encontradoIzq != nullptr) {
+            return encontradoIzq; // Si lo encontró en la izquierda, lo devuelve
+        }
+        
+        // Si no estaba en la izquierda, buscamos en la rama derecha
+        return buscarNodoPorId(nodo->der, id_buscado);
+    }
+
+    void guardarNodoEnCSV(NodoMiembro* nodo, ofstream& archivo) {
+        if (nodo == nullptr) return;
+
+        archivo << nodo->dato.id << ","
+                << nodo->dato.name << ","
+                << nodo->dato.last_name << ","
+                << nodo->dato.gender << ","
+                << nodo->dato.age << ","
+                << nodo->dato.id_boss << ","
+                << (int)nodo->dato.is_dead << ","
+                << (int)nodo->dato.in_jail << ","
+                << (int)nodo->dato.was_boss << ","
+                << (int)nodo->dato.is_boss << "\n";
+
+        guardarNodoEnCSV(nodo->izq, archivo);
+        guardarNodoEnCSV(nodo->der, archivo);
+    }
+
 public:
     ArbolMiembros() : root(nullptr) {}
 
@@ -228,6 +267,42 @@ public:
         }
         mostrarInternoVivos(root, "", true);
     }
+       void aplicarCambiosYGuardar(const Miembro& datosModificados) {
+        NodoMiembro* objetivo = buscarNodoPorId(root, datosModificados.id);
+        
+        if (objetivo == nullptr) return; // Validación de seguridad
+
+        // 1. Aplicar los datos modificados al nodo
+        objetivo->dato = datosModificados;
+
+        // 2. Reglas de negocio: Inhabilitación automática del jefe actual
+        if (objetivo->dato.is_boss && (objetivo->dato.is_dead || objetivo->dato.in_jail || objetivo->dato.age > 70)) {
+            cout << "\n[!] ALERTA CRITICA: El Jefe actual ha sido incapacitado (Muerto, Preso o >70 anos).\n";
+            cout << "[!] Ejecutando reglas de sucesion automaticamente...\n";
+            simularSucesion(objetivo->dato.id); 
+        }
+
+        // 3. GUARDADO FÍSICO
+        cout << "\nGuardando cambios en la base de datos (miembros.csv)...\n";
+        if (actualizarCSV("miembros.csv")) { 
+            cout << "[+] Todos los cambios han sido guardados exitosamente en el archivo.\n";
+        }
+    }
+    
+
+    bool actualizarCSV(const string& nombreArchivo) {
+        ofstream archivo(nombreArchivo);
+        if (!archivo.is_open()) {
+            cout << "\n[!] Error: No se pudo abrir " << nombreArchivo << " para guardar los cambios.\n";
+            return false;
+        }
+
+        archivo << "id,name,last_name,gender,age,id_boss,is_dead,in_jail,was_boss,is_boss\n";
+        guardarNodoEnCSV(root, archivo);
+        archivo.close();
+        return true;
+    }
+    
 
     void simularSucesion(int idJefe) {
         NodoMiembro* jefe = buscarPorId(root, idJefe);
@@ -342,7 +417,6 @@ public:
                  << jefeActual->dato.name << " " << jefeActual->dato.last_name << " esta al mando.\n";
         }
     }
-
 };
 
 #endif
