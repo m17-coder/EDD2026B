@@ -22,15 +22,14 @@ int main() {
     }
 
     char opcion = '0';
-    while (opcion != '5') {
+    while (opcion != '4') {
         cout << "\n============================================\n";
         cout << "      PROTOTIPO - CASA NOSTRA   \n";
         cout << "============================================\n";
         cout << "1. Mostrar estructura completa del organigrama\n";
         cout << "2. Ver linea de sucesion actual \n";
-        cout << "3. Simular evento de redefinicion de Jefe\n";
-        cout << "4. Modificar datos de un miembro \n";
-        cout << "5. Salir del programa\n";
+        cout << "3. Modificar datos de un miembro \n";
+        cout << "4. Salir del programa\n";
         cout << "--------------------------------------------\n";
         cout << "Seleccione una opcion: ";
         
@@ -46,17 +45,8 @@ int main() {
                 cout << "--- LINEA DE SUCESION ACTUAL ---\n\n";
                 mafiaTree.mostrarSoloVIvos();
                 break;
-            case '3': {
-                cout << "\n--- SIMULAR SUCESIÓN (Presione ESC para cancelar) ---\n";
-                int idJefe = 0;
-                if (pedirEnteroCancelable("Ingrese el ID del jefe actual a reemplazar: ", idJefe)) {
-                    mafiaTree.simularSucesion(idJefe);
-                } else {
-                    cout << "\nOperacion cancelada.\n";
-                }
-                break;
-            }
-            case '4': { 
+
+            case '3': { 
                 cout << "\n--- MODIFICACION DE REGISTROS (Presione ESC en cualquier momento para cancelar) ---\n";
                 int idBuscar = 0;
                 
@@ -90,33 +80,33 @@ int main() {
                     cout << "------------------------------------------------------\n";
                     cout << "Seleccione el campo a modificar (ESC o 0 para cancelar/salir): ";
 
-                    char opcion = _getch();
+                    char opcionEdit = _getch(); // Cambiado de 'opcion' a 'opcionEdit' para evitar colisiones
                     bool cambioActual = false; 
 
-                    switch (opcion) {
+                    switch (opcionEdit) {
                         case 27: 
                         case '0':
-                            cout << (opcion == '0' ? "0\n" : "\n") << "\nSaliendo del menu de modificacion...\n";
+                            cout << (opcionEdit == '0' ? "0\n" : "\n") << "\nSaliendo del menu de modificacion...\n";
                             salir = true; 
                             break;
                         case '1':
-                            cout << opcion << "\nNuevo nombre: ";
+                            cout << opcionEdit << "\nNuevo nombre: ";
                             cin >> objTemp.name;
                             cambioActual = true;
                             break;
                         case '2':
-                            cout << opcion << "\nNuevo apellido: ";
+                            cout << opcionEdit << "\nNuevo apellido: ";
                             cin >> objTemp.last_name;
                             cambioActual = true;
                             break;
                         case '3':
-                            cout << opcion << "\nNuevo genero (H/M): ";
+                            cout << opcionEdit << "\nNuevo genero (H/M): ";
                             char g; cin >> g;
                             objTemp.gender = toupper(g);
                             cambioActual = true;
                             break;
                         case '4': {
-                            cout << opcion << "\n";
+                            cout << opcionEdit << "\n";
                             int nuevaEdad;
                             if (pedirEnteroCancelable("Nueva edad (ESC para cancelar): ", nuevaEdad)) {
                                 objTemp.age = nuevaEdad;
@@ -125,31 +115,31 @@ int main() {
                             break;
                         }
                         case '5':
-                            cout << opcion << "\n";
+                            cout << opcionEdit << "\n";
                             objTemp.is_dead = !objTemp.is_dead;
                             cout << "Estado vital cambiado a: " << (objTemp.is_dead ? "Muerto" : "Vivo") << "\n";
                             cambioActual = true;
                             break;
                         case '6':
-                            cout << opcion << "\n";
+                            cout << opcionEdit << "\n";
                             objTemp.in_jail = !objTemp.in_jail;
                             cout << "Estado legal cambiado a: " << (objTemp.in_jail ? "En prision" : "Libre") << "\n";
                             cambioActual = true;
                             break;
                         case '7':
-                            cout << opcion << "\n";
+                            cout << opcionEdit << "\n";
                             objTemp.was_boss = !objTemp.was_boss;
                             cout << "Estatus 'Fue Jefe' cambiado.\n";
                             cambioActual = true;
                             break;
                         case '8':
-                            cout << opcion << "\n";
+                            cout << opcionEdit << "\n";
                             objTemp.is_boss = !objTemp.is_boss;
                             cout << "Estatus 'Es Jefe' cambiado.\n";
                             cambioActual = true;
                             break;
                         default:
-                            cout << opcion << "\nOpcion no valida. No se hicieron cambios.\n";
+                            cout << opcionEdit << "\nOpcion no valida. No se hicieron cambios.\n";
                             break;
                     }
 
@@ -169,21 +159,26 @@ int main() {
 
                 if (huboCambios) {
                     mafiaTree.aplicarCambiosYGuardar(objTemp);
+                    cout << "\nDestruyendo arbol anterior y generando uno nuevo...\n";
+                    mafiaTree.vaciarArbol();
+                    leerCSV("miembros.csv", mafiaTree);
+                    cout << " Nuevo arbol generado.\n";
                 } else {
                     cout << "\nNo se detectaron cambios. Archivo sin alteraciones.\n";
                 }
-                break;
-            
-        }
-            case '5':
+                break; // <--- Corta limpiamente el caso 3
+            }
+
+            case '4':
                 cout << "Saliendo del sistema de forma segura. Arrivederci.\n";
                 break;
+
             default:
                 cout << "Opcion no valida. Intente de nuevo.\n";
                 break;
         }
     }
-    
+        
     return 0;
-    }
+}
     

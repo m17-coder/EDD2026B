@@ -205,6 +205,11 @@ public:
         liberar(root);
     }
 
+    void vaciarArbol() {
+        liberar(root); 
+        root = nullptr; 
+    }
+
     NodoMiembro* getRoot() const {
         return root;
     }
@@ -383,6 +388,10 @@ public:
             nuevoJefe->dato.is_boss = true;
             if (padre != nullptr) {
                 nuevoJefe->dato.id_boss = padre->dato.id;
+            }else {
+                
+                nuevoJefe->dato.id_boss = 0; 
+                jefe->dato.id_boss = nuevoJefe->dato.id;
             }
             
             cout << "\n========================================================\n";
@@ -396,25 +405,24 @@ public:
         }
     } 
 
-    void verificarYAutoAsignarJefeInicial() {
-        if (root == nullptr) return;
+    bool verificarYAutoAsignarJefeInicial() {
+        if (root == nullptr) return false;
 
-        // Buscamos al miembro que el CSV marcó como jefe principal (is_boss == true)
-        // O simplemente evaluamos la raíz del árbol.
         NodoMiembro* jefeActual = root; 
         
-        // EVALUACIÓN AUTOMÁTICA DE CONDICIONES INICIALES:
-        // Si el jefe asignado por el CSV ya está muerto, en la cárcel o es mayor de 70 años...
         if (jefeActual->dato.is_dead || jefeActual->dato.in_jail || jefeActual->dato.age > 70) {
-            cout << "[SISTEMA AUTOMÁTICO] Alerta: El jefe inicial (" << jefeActual->dato.name 
-                 << ") no cumple con los requisitos para gobernar (Muerto, en prision o > 70 años).\n";
+            cout << "[SISTEMA AUTOMÁTICO] Alerta: El jefe inicial no es apto para gobernar.\n";
             cout << "[SISTEMA AUTOMÁTICO] Aplicando reglas de sucesion de forma inmediata...\n";
             
-            // Llamamos a la lógica de sucesión que busca al primer heredero idóneo
             simularSucesion(jefeActual->dato.id);
+            
+            
+            actualizarCSV("miembros.csv");
+            return true; 
         } else {
             cout << "[SISTEMA AUTOMÁTICO] Jefe principal verificado con exito: " 
-                 << jefeActual->dato.name << " " << jefeActual->dato.last_name << " esta al mando.\n";
+                 << jefeActual->dato.name << " al mando.\n";
+            return false;
         }
     }
 };
