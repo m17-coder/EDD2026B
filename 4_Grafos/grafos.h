@@ -200,4 +200,108 @@ public:
     int obtener_num_vertices() const { return num_vertices; }
 };
 
+template <typename T>
+class Cola {
+private:
+    struct NodoCola {
+        T dato;
+        NodoCola* siguiente;
+        NodoCola(const T& val) : dato(val), siguiente(nullptr) {}
+    };
+    NodoCola* frente;
+    NodoCola* final_nodo;
+
+public:
+    Cola() : frente(nullptr), final_nodo(nullptr) {}
+    ~Cola() {
+        while (!vacia()) desencolar();
+    }
+
+    bool vacia() const { return frente == nullptr; }
+
+    void encolar(const T& valor) {
+        NodoCola* nuevo = new NodoCola(valor);
+        if (vacia()) {
+            frente = final_nodo = nuevo;
+        } else {
+            final_nodo->siguiente = nuevo;
+            final_nodo = nuevo;
+        }
+    }
+
+    T desencolar() {
+        if (vacia()) return T();
+        NodoCola* temp = frente;
+        T valor = temp->dato;
+        frente = frente->siguiente;
+        if (frente == nullptr) final_nodo = nullptr;
+        delete temp;
+        return valor;
+    }
+};
+
+template <typename T>
+class Pila {
+private:
+    struct NodoPila {
+        T dato;
+        NodoPila* siguiente;
+        NodoPila(const T& val, NodoPila* sig = nullptr) : dato(val), siguiente(sig) {}
+    };
+    NodoPila* tope;
+
+public:
+    Pila() : tope(nullptr) {}
+    ~Pila() {
+        while (!vacia()) desapilar();
+    }
+
+    bool vacia() const { return tope == nullptr; }
+
+    void apilar(const T& valor) {
+        tope = new NodoPila(valor, tope);
+    }
+
+    T desapilar() {
+        if (vacia()) return T();
+        NodoPila* temp = tope;
+        T valor = temp->dato;
+        tope = tope->siguiente;
+        delete temp;
+        return valor;
+    }
+    void bfs(const T& inicio) const {
+        int idx = buscar_indice(inicio);
+        if (idx == -1) {
+            std::cout << "[ERROR] Vertice de inicio no encontrado.\n";
+            return;
+        }
+
+        bool* visitado = new bool[num_vertices];
+        for (int i = 0; i < num_vertices; ++i) visitado[i] = false;
+
+        Cola<int> cola;
+        visitado[idx] = true;
+        cola.encolar(idx);
+
+        std::cout << "\nRecorrido BFS (Matriz) desde [" << inicio << "]: ";
+        while (!cola.vacia()) {
+            int u = cola.desencolar();
+            std::cout << vertices[u] << " ";
+
+            for (int v = 0; v < num_vertices; ++v) {
+                if (matriz[u][v] != 0 && !visitado[v]) {
+                    visitado[v] = true;
+                    cola.encolar(v);
+                }
+            }
+        }
+        std::cout << "\n";
+        delete[] visitado;
+    }
+};
+
+
+
+
 #endif
