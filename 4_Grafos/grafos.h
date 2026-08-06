@@ -237,6 +237,82 @@ public:
         std::cout << "\n";
         delete[] visitado;
     }
+    // Algoritmo de Dijkstra para Matriz de Adyacencia
+    void dijkstra(const T& origen, const T& destino) const {
+        int u_start = buscar_indice(origen);
+        int u_end = buscar_indice(destino);
+
+        if (u_start == -1 || u_end == -1) {
+            std::cout << "[ERROR] Vertice de origen o destino no encontrado.\n";
+            return;
+        }
+
+        const int INF = 1e9; // Constante para representar infinito
+        int* dist = new int[num_vertices];
+        bool* visitado = new bool[num_vertices];
+        int* previo = new int[num_vertices];
+
+        for (int i = 0; i < num_vertices; ++i) {
+            dist[i] = INF;
+            visitado[i] = false;
+            previo[i] = -1;
+        }
+
+        dist[u_start] = 0;
+
+        for (int count = 0; count < num_vertices - 1; ++count) {
+            int min_dist = INF;
+            int u = -1;
+
+            // Seleccionar el vértice no visitado con la distancia mínima
+            for (int v = 0; v < num_vertices; ++v) {
+                if (!visitado[v] && dist[v] < min_dist) {
+                    min_dist = dist[v];
+                    u = v;
+                }
+            }
+
+            if (u == -1) break; // Vertices restantes inalcanzables
+
+            visitado[u] = true;
+
+            // Actualizar la distancia de los vecinos de u
+            for (int v = 0; v < num_vertices; ++v) {
+                if (!visitado[v] && matriz[u][v] != 0 && dist[u] + matriz[u][v] < dist[v]) {
+                    dist[v] = dist[u] + matriz[u][v];
+                    previo[v] = u;
+                }
+            }
+        }
+
+        // Impresión del resultado y reconstrucción del camino
+        if (dist[u_end] == INF) {
+            std::cout << "\nNo existe camino entre [" << origen << "] y [" << destino << "].\n";
+        } else {
+            std::cout << "\nDistancia minima (Matriz) de [" << origen << "] a [" << destino << "]: " << dist[u_end] << "\n";
+            std::cout << "Camino: ";
+
+            int* camino = new int[num_vertices];
+            int tam = 0;
+            int curr = u_end;
+
+            while (curr != -1) {
+                camino[tam++] = curr;
+                curr = previo[curr];
+            }
+
+            for (int i = tam - 1; i >= 0; --i) {
+                std::cout << vertices[camino[i]] << (i > 0 ? " -> " : "");
+            }
+            std::cout << "\n";
+
+            delete[] camino;
+        }
+
+        delete[] dist;
+        delete[] visitado;
+        delete[] previo;
+    }
 };
 
 template <typename T>
@@ -399,6 +475,87 @@ public:
         }
         std::cout << "\n";
         delete[] visitado;
+    }
+    // Algoritmo de Dijkstra para Lista de Adyacencia
+    void dijkstra(const T& origen, const T& destino) const {
+        int u_start = buscar_indice(origen);
+        int u_end = buscar_indice(destino);
+
+        if (u_start == -1 || u_end == -1) {
+            std::cout << "[ERROR] Vertice de origen o destino no encontrado.\n";
+            return;
+        }
+
+        const int INF = 1e9;
+        int* dist = new int[num_vertices];
+        bool* visitado = new bool[num_vertices];
+        int* previo = new int[num_vertices];
+
+        for (int i = 0; i < num_vertices; ++i) {
+            dist[i] = INF;
+            visitado[i] = false;
+            previo[i] = -1;
+        }
+
+        dist[u_start] = 0;
+
+        for (int count = 0; count < num_vertices - 1; ++count) {
+            int min_dist = INF;
+            int u = -1;
+
+            // Seleccionar el vértice no visitado con la distancia mínima
+            for (int v = 0; v < num_vertices; ++v) {
+                if (!visitado[v] && dist[v] < min_dist) {
+                    min_dist = dist[v];
+                    u = v;
+                }
+            }
+
+            if (u == -1) break;
+
+            visitado[u] = true;
+
+            // Recorrer los nodos vecinos mediante la lista enlazada
+            NodoArista* actual = cabezas[u];
+            while (actual != nullptr) {
+                int v = actual->indice_destino;
+                int peso = actual->peso;
+
+                if (!visitado[v] && dist[u] + peso < dist[v]) {
+                    dist[v] = dist[u] + peso;
+                    previo[v] = u;
+                }
+                actual = actual->siguiente;
+            }
+        }
+
+        // Impresión del resultado y reconstrucción del camino
+        if (dist[u_end] == INF) {
+            std::cout << "\nNo existe camino entre [" << origen << "] y [" << destino << "].\n";
+        } else {
+            std::cout << "\nDistancia minima (Lista) de [" << origen << "] a [" << destino << "]: " << dist[u_end] << "\n";
+            std::cout << "Camino: ";
+
+            int* camino = new int[num_vertices];
+            int tam = 0;
+            int curr = u_end;
+
+            while (curr != -1) {
+                camino[tam++] = curr;
+                curr = previo[curr];
+            }
+
+            for (int i = tam - 1; i >= 0; --i) {
+                std::cout << vertices[camino[i]] << (i > 0 ? " -> " : "");
+            }
+            std::cout << "\n";
+
+            delete[] camino;
+        }
+
+        delete[] dist;
+        delete[] visitado;
+        delete[] previo;
     }
 };
 #endif
